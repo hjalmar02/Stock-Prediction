@@ -5,13 +5,12 @@ import datetime as dt
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import numpy as np
+from sys import exit
 plt.style.use('ggplot')
+pd.set_option('display.max_columns', 7)
 
 today = dt.date.today()
 std_start = today - dt.timedelta(30)
-
-print(today)
-print(std_start)
 
 
 class Stock:
@@ -63,7 +62,7 @@ class Stock:
         rdate = str(self.end)
         mdate1 = dt.datetime.strptime(mdate, "%Y-%m-%d").date()
         rdate1 = dt.datetime.strptime(rdate, "%Y-%m-%d").date()
-        delta =  (mdate1 - rdate1).days
+        delta = (mdate1 - rdate1).days
 
         predict_index = self.quote.shape[0] + delta - 1
 
@@ -82,31 +81,84 @@ class Stock:
 
         self.quote.set_index('Date', inplace=True)
 
-
         return model.predict(np.array([predict_index]).reshape(-1, 1))
+
+    def test(self, period):
+        """Test accuracy of prediction relative to real values.
+
+        Args:
+            period (int): How many days in the past to test accuracy
+        """
+
+        dates = []
+        real_closes = []
+        predicted_closes = []
+        errors = []
+        for i in range(1, period):
+            try:
+                date = today - dt.timedelta(i)
+                real_close = self.quote['Close'][date]
+                predict_close = self.predict(date)[0]
+                error = abs(predict_close - real_close) / real_close * 100
+
+                dates.append(date)
+                real_closes.append(real_close)
+                predicted_closes.append(predict_close)
+                errors.append(error)
+            except:
+                continue
+
+        test_df = pd.DataFrame(data={'Date': dates, 'Predicted Close': predicted_closes,
+                                     'Real Close': real_closes,
+                                     'Error': errors})
+        test_df.set_index('Date', inplace=True)
+        plt.figure(figsize=(16, 8))
+        plt.title('Test')
+        plt.plot(test_df['Real Close'])
+        plt.plot(test_df['Predicted Close'])
+        plt.xlabel('Date', fontsize=18)
+        plt.ylabel('Closing price USD')
+        plt.show()
+
+        print(test_df)
+
+        mean_error = sum(errors) / len(errors)
+        print(f"Mean error: {round(mean_error, 2)} %")
+
 
 if __name__ == "__main__":
     test = Stock(input('Stock name:'))
-    test.get_quote(today - dt.timedelta(10))
-    #print(test.predict(dt.date(2020, 3, 28)))
+    test.get_quote(today - dt.timedelta(1000))
 
-    dates = []
-    closes = []
-    for i in range(1, 10):
-        date = today + dt.timedelta(i)
-        close = test.predict(date)[0]
-        dates.append(date)
-        closes.append(close)
+    while True:
+        action = input('Choose action [predict/exit/test]: ')
 
-    prediction = pd.DataFrame(data={'Date': dates, 'Close': closes})
-    prediction.set_index('Date', inplace=True)
-    print(prediction)
+        if action == 'predict':
+            dates = []
+            closes = []
+            dates.append(today)
+            closes.append(test.quote['Close'][today])
+            for i in range(1, 1000):
+                date = today + dt.timedelta(i)
+                close = test.predict(date)[0]
+                dates.append(date)
+                closes.append(close)
 
+            prediction = pd.DataFrame(data={'Date': dates, 'Close': closes})
+            prediction.set_index('Date', inplace=True)
 
-    plt.figure(figsize=(16, 8))
-    plt.title('Test')
-    plt.plot(test.quote['Close'])
-    plt.plot(prediction['Close'])
-    plt.xlabel('Date', fontsize=18)
-    plt.ylabel('Closing price USD')
-    plt.show()
+            plt.figure(figsize=(16, 8))
+            plt.title('Test')
+            plt.plot(test.quote['Close'])
+            plt.plot(prediction['Close'])
+            plt.xlabel('Date', fontsize=18)
+            plt.ylabel('Closing price USD')
+            plt.show()
+
+        elif action == 'test':
+            test.test(100)
+
+        elif action == 'exit':
+            exit()
+        else:
+            print('invalid command')
