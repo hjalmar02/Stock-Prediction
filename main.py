@@ -5,7 +5,7 @@ import datetime as dt
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import numpy as np
-from sys import exit
+import sys
 plt.style.use('ggplot')
 pd.set_option('display.max_columns', 7)
 
@@ -133,6 +133,7 @@ if __name__ == "__main__":
     while True:
         action = input('Choose action [predict/exit/test]: ')
 
+
         if action == 'predict':
             dates = []
             closes = []
@@ -159,6 +160,6 @@ if __name__ == "__main__":
             test.test(100)
 
         elif action == 'exit':
-            exit()
+            sys.exit()
         else:
             print('invalid command')
